@@ -18,7 +18,9 @@ let inputFiles: [(source: URL, destination: URL, symbolName: String)] = [
     )
 ]
 
-let pairPattern = #"^\s*"((?:\\.|[^"])*)"\s*=>\s*"((?:\\.|[^"])*)""#
+let constPattern = #"^\s*const\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"((?:\\.|[^"])*)"\s*$"#
+let constRegex = try NSRegularExpression(pattern: constPattern)
+let pairPattern = #"^\s*(.+?)\s*=>\s*"((?:\\.|[^"])*)""#
 let pairRegex = try NSRegularExpression(pattern: pairPattern)
 
 func decodeJuliaString(_ raw: Substring) -> String {
@@ -97,17 +99,69 @@ func decodeJuliaString(_ raw: Substring) -> String {
     return result
 }
 
-func parsePairs(from source: String) -> [(trigger: String, text: String)] {
-    var pairs: [(trigger: String, text: String)] = []
-    var inForwardTable = false
+func parseConstants(from source: String) -> [String: String] {
+    var constants: [String: String] = [:]
 
     for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
         let line = String(rawLine)
+        let range = NSRange(line.startIndex..<line.endIndex, in: line)
+        guard let match = constRegex.firstMatch(in: line, options: [], range: range) else {
+            continue
+        }
 
+        guard
+            let nameRange = Range(match.range(at: 1), in: line),
+            let valueRange = Range(match.range(at: 2), in: line)
+        else {
+            continue
+        }
+
+        constants[String(line[nameRange])] = decodeJuliaString(line[valueRange])
+    }
+
+    return constants
+}
+
+func evaluateTriggerExpression(_ expression: Substring, constants: [String: String]) -> String? {
+    var result = String()
+
+    for rawToken in expression.split(separator: "*", omittingEmptySubsequences: true) {
+        let token = rawToken.trimmingCharacters(in: .whitespaces)
+        guard !token.isEmpty else {
+            continue
+        }
+
+        if token.first == "\"", token.last == "\"" {
+            let contents = token.dropFirst().dropLast()
+            result += decodeJuliaString(contents)
+            continue
+        }
+
+        guard let constant = constants[token] else {
+            return nil
+        }
+        result += constant
+    }
+
+    return result
+}
+
+func parsePairs(from source: String) -> [(trigger: String, text: String)] {
+    var pairs: [(trigger: String, text: String)] = []
+    var inForwardTable = false
+    let constants = parseConstants(from: source)
+
+    for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
+        let line = String(rawLine)
         let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+
         if trimmedLine == "const latex_symbols = Dict(" || trimmedLine == "const emoji_symbols = Dict(" {
             inForwardTable = true
             continue
+        }
+
+        if inForwardTable && trimmedLine == "# When a symbol has several completions, a canonical reverse mapping is" {
+            break
         }
 
         guard inForwardTable else {
@@ -126,7 +180,9 @@ func parsePairs(from source: String) -> [(trigger: String, text: String)] {
             continue
         }
 
-        let trigger = decodeJuliaString(line[triggerRange])
+        guard let trigger = evaluateTriggerExpression(line[triggerRange], constants: constants) else {
+            continue
+        }
         let text = decodeJuliaString(line[textRange])
         guard trigger.hasPrefix("\\") && !text.hasPrefix("\\") else {
             continue

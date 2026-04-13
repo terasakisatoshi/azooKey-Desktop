@@ -12,6 +12,12 @@ import Testing
     #expect(resolver.resolveExact("\\^A")?.text == "ᴬ")
 }
 
+@Test func juliaResolverManualAliasEntriesResolve() async throws {
+    let resolver = JuliaUnicodeResolver.standard
+    #expect(resolver.resolveExact("\\scrB")?.text == "ℬ")
+    #expect(resolver.resolveExact("\\bbpi")?.text == "ℼ")
+}
+
 @Test func juliaResolverPrefixEmoji() async throws {
     let resolver = JuliaUnicodeResolver.standard
     #expect(resolver.resolveMatches("\\:ko").contains { $0.trigger == "\\:koala:" })
