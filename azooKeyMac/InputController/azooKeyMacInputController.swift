@@ -189,6 +189,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         self.predictionWindow.orderOut(nil)
         self.replaceSuggestionWindow.orderOut(nil)
         self.candidatesViewController.updateCandidatePresentations([], selectionIndex: nil, cursorLocation: .zero)
+        self.resetJuliaSession()
+        self.inputState = .none
         super.deactivateServer(sender)
     }
 
@@ -201,21 +203,11 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
             return
         }
         if case .juliaComposing = self.inputState {
-            if let client = sender as? IMKTextInput {
-                self.commitJuliaSelection(on: client, inputState: self.inputState)
-            } else {
-                self.resetJuliaSession()
-            }
-            self.inputState = .none
+            self.finalizeJuliaSession(on: sender as? IMKTextInput)
             return
         }
         if case .juliaSelecting = self.inputState {
-            if let client = sender as? IMKTextInput {
-                self.commitJuliaSelection(on: client, inputState: self.inputState)
-            } else {
-                self.resetJuliaSession()
-            }
-            self.inputState = .none
+            self.finalizeJuliaSession(on: sender as? IMKTextInput)
             return
         }
         if self.segmentsManager.isEmpty {
@@ -904,9 +896,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
 extension azooKeyMacInputController: CandidatesViewControllerDelegate {
     func candidateSubmitted() {
         Task { @MainActor in
-            if case .juliaSelecting = self.inputState, let client = self.client() {
-                self.commitJuliaSelection(on: client, inputState: self.inputState)
-                self.inputState = .none
+            if !self.juliaSession.buffer.isEmpty {
+                self.finalizeJuliaSession(on: self.client())
                 self.refreshMarkedText()
                 self.refreshCandidateWindow()
                 return

@@ -7,6 +7,40 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertEqual(session.commitText(for: "\\alpha"), "α")
     }
 
+    func testAppendAndDeleteBackwardUpdateBuffer() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.replaceBuffer("\\al")
+
+        session.append("p")
+        XCTAssertEqual(session.buffer, "\\alp")
+
+        session.deleteBackward()
+        XCTAssertEqual(session.buffer, "\\al")
+    }
+
+    func testSelectionMovementClampsToAvailableMatches() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.replaceBuffer("\\al")
+        XCTAssertFalse(session.matches.isEmpty)
+
+        session.moveSelection(by: 100)
+        XCTAssertEqual(session.selectedIndex, session.matches.count - 1)
+
+        session.moveSelection(by: -100)
+        XCTAssertEqual(session.selectedIndex, 0)
+    }
+
+    func testResetClearsJuliaSessionState() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.replaceBuffer("\\alpha")
+        session.moveSelection(by: 1)
+        session.reset()
+
+        XCTAssertEqual(session.buffer, "")
+        XCTAssertEqual(session.selectedIndex, 0)
+        XCTAssertTrue(session.matches.isEmpty)
+    }
+
     func testSelectedJuliaCandidateWinsOverExactMatchWhenSelecting() {
         var session = JuliaUnicodeSession(resolver: .standard)
         session.replaceBuffer("\\alpha")

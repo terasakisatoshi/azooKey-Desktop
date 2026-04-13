@@ -142,6 +142,15 @@ extension azooKeyMacInputController {
         self.juliaSession.reset()
     }
 
+    @MainActor func finalizeJuliaSession(on client: IMKTextInput?) {
+        if let client {
+            self.commitJuliaSelection(on: client, inputState: self.inputState)
+        } else {
+            self.resetJuliaSession()
+        }
+        self.inputState = .none
+    }
+
     @MainActor func resetJuliaSession() {
         self.juliaSession.reset()
     }
