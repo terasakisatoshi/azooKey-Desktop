@@ -405,6 +405,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
     // この種のコードは複雑にしかならないので、lintを無効にする
     // swiftlint:disable:next cyclomatic_complexity
     @MainActor func handleClientAction(_ clientAction: ClientAction, clientActionCallback: ClientActionCallback, client: IMKTextInput) -> Bool {
+        var didHandleJuliaCandidateAction = false
         // return only false
         switch clientAction {
         case .showCandidateWindow:
@@ -551,6 +552,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         case .deleteBackwardFromJuliaUnicodeBuffer:
             self.deleteBackwardFromJuliaSession()
         case .moveJuliaUnicodeCandidate(let offset):
+            didHandleJuliaCandidateAction = true
             let command: JuliaUnicodeSession.Command = if offset == 0 {
                 .tab
             } else if offset > 0 {
@@ -606,6 +608,9 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         case .fallthrough:
             break
         case .transition(let inputState):
+            if didHandleJuliaCandidateAction {
+                break
+            }
             // 遷移した時にreplaceSuggestionWindowをhideする
             if inputState != .replaceSuggestion {
                 self.replaceSuggestionWindow.orderOut(nil)
@@ -940,11 +945,11 @@ extension azooKeyMacInputController: CandidatesViewControllerDelegate {
     func candidateSelectionChanged(_ row: Int) {
         Task { @MainActor in
             if case .juliaComposing = self.inputState {
-                self.juliaSession.selectedIndex = min(max(row, 0), max(self.juliaSession.matches.count - 1, 0))
+                self.juliaSession.selectCandidate(at: row, explicit: false)
                 return
             }
             if case .juliaSelecting = self.inputState {
-                self.juliaSession.selectedIndex = min(max(row, 0), max(self.juliaSession.matches.count - 1, 0))
+                self.juliaSession.selectCandidate(at: row, explicit: true)
                 return
             }
             self.segmentsManager.requestSelectingRow(row)

@@ -24,18 +24,27 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertEqual(result.commitText, "\\notasymbol")
     }
 
-    func testEnterPrefersSelectedCandidateAfterBufferEdit() {
+    func testEnterIgnoresImplicitSelectionWhileComposing() {
         var session = JuliaUnicodeSession(resolver: .standard)
-        session.buffer = "\\alph"
-        session.matches = [
-            JuliaUnicodeEntry(trigger: "\\alpha", text: "α"),
-            JuliaUnicodeEntry(trigger: "\\alpha-custom", text: "alt")
-        ]
-        session.selectedIndex = 1
+        session.replaceBuffer("\\alp")
 
         let result = session.perform(.enter)
 
-        XCTAssertEqual(result.commitText, "alt")
+        XCTAssertEqual(result.commitText, "\\alp")
+        XCTAssertEqual(result.mode, .none)
+    }
+
+    func testEnterPrefersExplicitSelectionInSelectingMode() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        let matches = JuliaUnicodeResolver.standard.resolveMatches("\\al")
+        XCTAssertGreaterThan(matches.count, 1)
+        session.buffer = "\\al"
+        session.matches = matches
+        session.selectCandidate(at: 1, explicit: true)
+
+        let result = session.perform(.enter)
+
+        XCTAssertEqual(result.commitText, matches[1].text)
         XCTAssertEqual(result.mode, .none)
     }
 
@@ -97,15 +106,4 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertTrue(session.matches.isEmpty)
     }
 
-    func testSelectedJuliaCandidateWinsOverExactMatchWhenSelecting() {
-        var session = JuliaUnicodeSession(resolver: .standard)
-        session.replaceBuffer("\\alpha")
-        session.matches = [
-            JuliaUnicodeEntry(trigger: "\\alpha", text: "α"),
-            JuliaUnicodeEntry(trigger: "\\alpha-custom", text: "alt")
-        ]
-        session.selectedIndex = 1
-
-        XCTAssertEqual(session.commitText(for: session.buffer, preferSelectedEntry: true), "alt")
-    }
 }

@@ -6,6 +6,7 @@ struct JuliaUnicodeSession {
     var buffer: String = ""
     var selectedIndex: Int = 0
     var matches: [JuliaUnicodeEntry] = []
+    private var hasExplicitSelection = false
 
     enum Mode: Sendable, Equatable {
         case composing
@@ -42,6 +43,7 @@ struct JuliaUnicodeSession {
         self.buffer = newValue
         self.matches = self.resolver.resolveMatches(newValue)
         self.selectedIndex = min(self.selectedIndex, max(self.matches.count - 1, 0))
+        self.hasExplicitSelection = false
     }
 
     mutating func replaceBuffer(_ newValue: String, resolver: JuliaUnicodeResolver) {
@@ -64,14 +66,24 @@ struct JuliaUnicodeSession {
         guard !self.matches.isEmpty else {
             return
         }
-        let nextIndex = self.selectedIndex + offset
-        self.selectedIndex = min(max(nextIndex, 0), self.matches.count - 1)
+        self.selectCandidate(at: self.selectedIndex + offset, explicit: true)
+    }
+
+    mutating func selectCandidate(at index: Int, explicit: Bool) {
+        guard !self.matches.isEmpty else {
+            self.selectedIndex = 0
+            self.hasExplicitSelection = false
+            return
+        }
+        self.selectedIndex = min(max(index, 0), self.matches.count - 1)
+        self.hasExplicitSelection = explicit
     }
 
     mutating func reset() {
         self.buffer = ""
         self.selectedIndex = 0
         self.matches = []
+        self.hasExplicitSelection = false
     }
 
     mutating func perform(_ command: Command) -> ActionResult {
@@ -93,7 +105,7 @@ struct JuliaUnicodeSession {
                 return .init(updatedBuffer: self.buffer, commitText: nil, mode: .composing)
             }
 
-            self.selectedIndex = min(self.selectedIndex, max(self.matches.count - 1, 0))
+            self.selectCandidate(at: self.selectedIndex, explicit: true)
             return .init(updatedBuffer: self.buffer, commitText: nil, mode: .selecting)
         case .nextCandidate:
             guard !self.matches.isEmpty else {
@@ -108,13 +120,9 @@ struct JuliaUnicodeSession {
             self.moveSelection(by: -1)
             return .init(updatedBuffer: self.buffer, commitText: nil, mode: .selecting)
         case .enter:
-            let result = Self.enterAction(
-                buffer: self.buffer,
-                selectedIndex: self.matches.indices.contains(self.selectedIndex) ? self.selectedIndex : nil,
-                resolver: self.resolver
-            )
+            let commitText = self.commitText(for: self.buffer, preferSelectedEntry: true) ?? self.buffer
             self.reset()
-            return .init(updatedBuffer: "", commitText: result.commitText, mode: .none)
+            return .init(updatedBuffer: "", commitText: commitText, mode: .none)
         case .cancel:
             self.reset()
             return .init(updatedBuffer: "", commitText: nil, mode: .none)
@@ -169,11 +177,11 @@ struct JuliaUnicodeSession {
     }
 
     func commitText(for input: String, preferSelectedEntry: Bool = false) -> String? {
-        if preferSelectedEntry, let selectedEntry {
+        if preferSelectedEntry, self.hasExplicitSelection, let selectedEntry {
             return selectedEntry.text
         }
 
-        return self.resolver.resolveExact(input)?.text ?? self.selectedEntry?.text ?? input
+        return self.resolver.resolveExact(input)?.text ?? input
     }
 
     mutating func commitTextAndReset(for input: String, preferSelectedEntry: Bool = false) -> String? {
