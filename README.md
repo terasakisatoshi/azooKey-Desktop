@@ -114,7 +114,7 @@ git submodule update --init
 * Xcode 26.0ではビルドできない可能性があります。Xcode 16系または26.1以降をご利用ください。
 
 変換精度がリリース版に比べて悪いと感じた場合、以下をご確認ください。
-* Git LFSが導入されていない環境では、重みファイルがローカル環境に落とせていない場合があります。`azooKey-Desktop/azooKeyMac/Resources/zenz-v3-small-gguf/ggml-model-Q5_K_M.gguf`が70MB程度のファイルとなっているかを確認してください
+* Git LFSが導入されていない環境では、重みファイルがローカル環境に落とせていない場合があります。`azooKey-Desktop/azooKeyMac/Resources/zenz-v3.1-small-gguf/ggml-model-Q5_K_M.gguf`が70MB程度のファイルとなっているかを確認してください
 
 ### pkgファイルの作成
 `pkgbuild.sh`によって配布用のdmgファイルを作成できます。`build/azooKeyMac.app` としてDeveloper IDで署名済みの.appを配置してください。
