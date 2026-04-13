@@ -102,6 +102,45 @@ git submodule update --init
 
 開発中はazooKeyのプロセスをkillすることで最新版を反映することが出来ます。また、必要に応じて入力ソースからazooKeyを削除して再度追加する、macOSからログアウトして再ログインするなど、リセットが必要になる場合があります。
 
+### リリース版と並行して開発版を再インストールする
+
+`/Library/Input Methods/azooKeyMac.app` にリリース版が入っている状態で開発版も試したい場合は、別 bundle id の user-local input method として入れ直すと衝突を避けられます。以下の例では `azooKey Julia` という名前で再インストールします。
+
+```bash
+BUILD_DIR=/tmp/azookey-julia-dev-install
+APP_SRC="$BUILD_DIR/Build/Products/Debug/azooKeyMac.app"
+APP_DST="$HOME/Library/Input Methods/azooKeyJulia.app"
+
+xcodebuild -project ./azooKeyMac.xcodeproj \
+  -scheme azooKeyMac \
+  -configuration Debug \
+  -derivedDataPath "$BUILD_DIR" \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  build
+
+rm -rf "$APP_DST"
+cp -R "$APP_SRC" "$APP_DST"
+
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.atelierarith.inputmethod.azooKeyJulia" "$APP_DST/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleName azooKeyJulia" "$APP_DST/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :InputMethodConnectionName local.atelierarith.inputmethod.azooKeyJulia_Connection" "$APP_DST/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :ComponentInputModeDict:tsInputModeListKey:com.apple.inputmethod.Japanese:TISInputSourceID local.atelierarith.inputmethod.azooKeyJulia.Japanese" "$APP_DST/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :ComponentInputModeDict:tsInputModeListKey:com.apple.inputmethod.Roman:TISInputSourceID local.atelierarith.inputmethod.azooKeyJulia.Roman" "$APP_DST/Contents/Info.plist"
+
+cat > "$APP_DST/Contents/Resources/en.lproj/InfoPlist.strings" <<'EOF'
+CFBundleName = "azooKey Julia";
+com.apple.inputmethod.Roman = "azooKey Julia (English)";
+com.apple.inputmethod.Japanese = "azooKey Julia (日本語)";
+EOF
+
+codesign --force --deep --sign - --entitlements ./azooKeyMac/azooKeyMac.entitlements "$APP_DST"
+"/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister" -f -R -trusted "$APP_DST"
+killall TextInputMenuAgent cfprefsd
+```
+
+その後、「設定」>「キーボード」>「入力ソース」から `azooKey Julia` を追加してください。既に `azooKey Julia` を入れている場合は、一度削除してから追加し直すと確実です。
+
 ### 開発時のトラブルシューティング
 
 `install.sh`でビルドが成功しない場合、以下をご確認ください。
