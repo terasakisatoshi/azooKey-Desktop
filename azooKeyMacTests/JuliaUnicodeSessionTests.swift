@@ -7,6 +7,23 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertEqual(session.commitText(for: "\\alpha"), "α")
     }
 
+    func testTabExpandsUniquePrefixBeforeSelection() {
+        let result = JuliaUnicodeSession.tabAction(buffer: "\\alp", resolver: .standard)
+
+        XCTAssertEqual(result.updatedBuffer, "\\alpha")
+        XCTAssertNil(result.commitText)
+    }
+
+    func testEnterFallsBackToLiteralWhenNoJuliaMatchExists() {
+        let result = JuliaUnicodeSession.enterAction(
+            buffer: "\\notasymbol",
+            selectedIndex: nil,
+            resolver: .standard
+        )
+
+        XCTAssertEqual(result.commitText, "\\notasymbol")
+    }
+
     func testAppendAndDeleteBackwardUpdateBuffer() {
         var session = JuliaUnicodeSession(resolver: .standard)
         session.replaceBuffer("\\al")

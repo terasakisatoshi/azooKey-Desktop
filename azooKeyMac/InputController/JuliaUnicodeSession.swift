@@ -7,6 +7,11 @@ struct JuliaUnicodeSession {
     var selectedIndex: Int = 0
     var matches: [JuliaUnicodeEntry] = []
 
+    struct ActionResult: Sendable, Equatable {
+        var updatedBuffer: String
+        var commitText: String?
+    }
+
     init(resolver: JuliaUnicodeResolver = .standard) {
         self.resolver = resolver
     }
@@ -54,6 +59,49 @@ struct JuliaUnicodeSession {
         self.matches = []
     }
 
+    mutating func tabAction() -> ActionResult {
+        let result = Self.tabAction(buffer: self.buffer, resolver: self.resolver)
+        if result.commitText != nil {
+            self.reset()
+            return result
+        }
+
+        self.replaceBuffer(result.updatedBuffer)
+        self.selectedIndex = 0
+        return result
+    }
+
+    static func tabAction(buffer: String, resolver: JuliaUnicodeResolver) -> ActionResult {
+        let matches = resolver.resolveMatches(buffer)
+        if let exact = resolver.resolveExact(buffer) {
+            return .init(updatedBuffer: "", commitText: exact.text)
+        }
+
+        let prefix = Self.commonPrefix(of: matches.map(\.trigger))
+        if prefix.count > buffer.count {
+            return .init(updatedBuffer: prefix, commitText: nil)
+        }
+
+        return .init(updatedBuffer: buffer, commitText: nil)
+    }
+
+    static func enterAction(
+        buffer: String,
+        selectedIndex: Int?,
+        resolver: JuliaUnicodeResolver
+    ) -> ActionResult {
+        let matches = resolver.resolveMatches(buffer)
+        if let selectedIndex, matches.indices.contains(selectedIndex) {
+            return .init(updatedBuffer: "", commitText: matches[selectedIndex].text)
+        }
+
+        if let exact = resolver.resolveExact(buffer) {
+            return .init(updatedBuffer: "", commitText: exact.text)
+        }
+
+        return .init(updatedBuffer: "", commitText: buffer)
+    }
+
     func commitText(for input: String, preferSelectedEntry: Bool = false) -> String? {
         if preferSelectedEntry, let selectedEntry {
             return selectedEntry.text
@@ -67,5 +115,20 @@ struct JuliaUnicodeSession {
             self.reset()
         }
         return self.commitText(for: input, preferSelectedEntry: preferSelectedEntry)
+    }
+
+    private static func commonPrefix(of strings: [String]) -> String {
+        guard var prefix = strings.first else {
+            return ""
+        }
+
+        for string in strings.dropFirst() {
+            prefix = String(prefix.commonPrefix(with: string))
+            if prefix.isEmpty {
+                break
+            }
+        }
+
+        return prefix
     }
 }

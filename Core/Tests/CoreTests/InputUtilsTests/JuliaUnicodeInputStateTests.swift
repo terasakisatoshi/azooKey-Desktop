@@ -72,6 +72,19 @@ private func withTypeBackSlashEnabled<T>(_ body: () -> T) -> T {
     #expect(callback == .transition(.juliaSelecting))
 }
 
+@Test func shiftSpaceMovesJuliaCandidateBackwardFromComposing() async throws {
+    let (action, callback) = InputState.juliaComposing.event(
+        eventCore: .init(modifierFlags: [.shift], characters: " ", charactersIgnoringModifiers: " ", keyCode: 49),
+        userAction: .space(prefersFullWidthWhenInput: false),
+        inputLanguage: .japanese,
+        liveConversionEnabled: false,
+        enableDebugWindow: false,
+        enableSuggestion: false
+    )
+    #expect(action == .moveJuliaUnicodeCandidate(-1))
+    #expect(callback == .transition(.juliaSelecting))
+}
+
 @Test func backspaceDeletesJuliaBufferFromSelecting() async throws {
     let (action, callback) = InputState.juliaSelecting.event(
         eventCore: .init(modifierFlags: [], characters: nil, charactersIgnoringModifiers: nil, keyCode: 51),
@@ -85,7 +98,7 @@ private func withTypeBackSlashEnabled<T>(_ body: () -> T) -> T {
     #expect(callback == .transition(.juliaComposing))
 }
 
-@Test func tabMovesJuliaCandidateFromComposing() async throws {
+@Test func tabStartsJuliaTabCompletionFromComposing() async throws {
     let (action, callback) = InputState.juliaComposing.event(
         eventCore: .init(modifierFlags: [], characters: "\t", charactersIgnoringModifiers: "\t", keyCode: 48),
         userAction: .tab,
@@ -94,8 +107,8 @@ private func withTypeBackSlashEnabled<T>(_ body: () -> T) -> T {
         enableDebugWindow: false,
         enableSuggestion: false
     )
-    #expect(action == .moveJuliaUnicodeCandidate(1))
-    #expect(callback == .transition(.juliaSelecting))
+    #expect(action == .moveJuliaUnicodeCandidate(0))
+    #expect(callback == .fallthrough)
 }
 
 @Test func arrowMovesJuliaCandidateFromComposing() async throws {

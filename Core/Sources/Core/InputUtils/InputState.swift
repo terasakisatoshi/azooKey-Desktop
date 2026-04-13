@@ -97,7 +97,7 @@ public enum InputState: Sendable, Hashable {
             case .unknown, .navigation, .backspace, .enter, .escape, .function, .editSegment, .tab, .forget, .transformSelectedText:
                 return (.fallthrough, .fallthrough)
             }
-        case .juliaComposing, .juliaSelecting:
+        case .juliaComposing:
             switch userAction {
             case .input(let pieces):
                 return (.appendToJuliaUnicodeBuffer(pieces.inputString(preferIntention: false)), .transition(.juliaComposing))
@@ -105,7 +105,45 @@ public enum InputState: Sendable, Hashable {
                 return (.appendToJuliaUnicodeBuffer(number.inputString), .transition(.juliaComposing))
             case .backspace:
                 return (.deleteBackwardFromJuliaUnicodeBuffer, .transition(.juliaComposing))
-            case .space, .tab:
+            case .space:
+                if event.modifierFlags.contains(.shift) {
+                    return (.moveJuliaUnicodeCandidate(-1), .transition(.juliaSelecting))
+                } else {
+                    return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
+                }
+            case .tab:
+                return (.moveJuliaUnicodeCandidate(0), .fallthrough)
+            case .navigation(let direction):
+                switch direction {
+                case .up, .left:
+                    return (.moveJuliaUnicodeCandidate(-1), .transition(.juliaSelecting))
+                case .down, .right:
+                    return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
+                }
+            case .enter:
+                return (.submitJuliaUnicodeSelection, .transition(.none))
+            case .escape:
+                return (.cancelJuliaUnicodeMode, .transition(.none))
+            case .unknown, .function, .editSegment, .suggest, .transformSelectedText, .deadKey, .英数, .かな, .forget:
+                return (.consume, .fallthrough)
+            case .startUnicodeInput:
+                return (.fallthrough, .fallthrough)
+            }
+        case .juliaSelecting:
+            switch userAction {
+            case .input(let pieces):
+                return (.appendToJuliaUnicodeBuffer(pieces.inputString(preferIntention: false)), .transition(.juliaComposing))
+            case .number(let number):
+                return (.appendToJuliaUnicodeBuffer(number.inputString), .transition(.juliaComposing))
+            case .backspace:
+                return (.deleteBackwardFromJuliaUnicodeBuffer, .transition(.juliaComposing))
+            case .space:
+                if event.modifierFlags.contains(.shift) {
+                    return (.moveJuliaUnicodeCandidate(-1), .transition(.juliaSelecting))
+                } else {
+                    return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
+                }
+            case .tab:
                 return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
             case .navigation(let direction):
                 switch direction {

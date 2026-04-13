@@ -6,7 +6,7 @@ import KanaKanjiConverterModuleWithDefaultDictionary
 @objc(azooKeyMacInputController)
 class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // swiftlint:disable:this type_name
     var segmentsManager: SegmentsManager
-    private(set) var inputState: InputState = .none
+    internal(set) var inputState: InputState = .none
     private var inputLanguage: InputLanguage = .japanese
     var liveConversionEnabled: Bool {
         Config.LiveConversion().value
@@ -551,7 +551,21 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         case .deleteBackwardFromJuliaUnicodeBuffer:
             self.deleteBackwardFromJuliaSession()
         case .moveJuliaUnicodeCandidate(let offset):
-            self.moveJuliaSessionSelection(by: offset)
+            if offset == 0 {
+                let previousBuffer = self.juliaSession.buffer
+                let result = self.juliaSession.tabAction()
+                if let commitText = result.commitText {
+                    client.insertText(commitText, replacementRange: NSRange(location: NSNotFound, length: 0))
+                    self.switchInputLanguage(self.inputLanguage, client: client)
+                    self.inputState = .none
+                } else if self.juliaSession.buffer == previousBuffer {
+                    self.inputState = .juliaSelecting
+                } else {
+                    self.inputState = .juliaComposing
+                }
+            } else {
+                self.moveJuliaSessionSelection(by: offset)
+            }
         case .submitJuliaUnicodeSelection:
             self.commitJuliaSelection(on: client, inputState: self.inputState)
         case .cancelJuliaUnicodeMode:
