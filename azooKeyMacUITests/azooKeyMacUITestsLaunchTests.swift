@@ -14,6 +14,8 @@ class azooKeyMacUITestsLaunchTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        throw XCTSkip("UI tests are not supported for the InputMethodKit background app target.")
+
         continueAfterFailure = false
     }
 
