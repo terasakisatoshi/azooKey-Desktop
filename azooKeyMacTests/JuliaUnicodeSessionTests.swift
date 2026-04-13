@@ -36,10 +36,9 @@ final class JuliaUnicodeSessionTests: XCTestCase {
 
     func testEnterPrefersExplicitSelectionInSelectingMode() {
         var session = JuliaUnicodeSession(resolver: .standard)
-        let matches = JuliaUnicodeResolver.standard.resolveMatches("\\al")
+        session.replaceBuffer("\\al")
+        let matches = session.matches
         XCTAssertGreaterThan(matches.count, 1)
-        session.buffer = "\\al"
-        session.matches = matches
         session.selectCandidate(at: 1, explicit: true)
 
         let result = session.perform(.enter)
@@ -50,9 +49,9 @@ final class JuliaUnicodeSessionTests: XCTestCase {
 
     func testEnterPrefersExplicitCandidateWindowSelectionWhileComposing() {
         var session = JuliaUnicodeSession(resolver: .standard)
-        let matches = JuliaUnicodeResolver.standard.resolveMatches("\\al")
-        XCTAssertGreaterThan(matches.count, 1)
         session.replaceBuffer("\\al")
+        let matches = session.matches
+        XCTAssertGreaterThan(matches.count, 1)
         session.selectCandidate(at: 1, explicit: true)
 
         let result = session.perform(.enter)
