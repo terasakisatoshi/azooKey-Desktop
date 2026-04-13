@@ -6,7 +6,7 @@ import KanaKanjiConverterModuleWithDefaultDictionary
 @objc(azooKeyMacInputController)
 class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // swiftlint:disable:this type_name
     var segmentsManager: SegmentsManager
-    internal(set) var inputState: InputState = .none
+    var inputState: InputState = .none
     private var inputLanguage: InputLanguage = .japanese
     var liveConversionEnabled: Bool {
         Config.LiveConversion().value
@@ -551,25 +551,35 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         case .deleteBackwardFromJuliaUnicodeBuffer:
             self.deleteBackwardFromJuliaSession()
         case .moveJuliaUnicodeCandidate(let offset):
-            if offset == 0 {
-                let previousBuffer = self.juliaSession.buffer
-                let result = self.juliaSession.tabAction()
-                if let commitText = result.commitText {
-                    client.insertText(commitText, replacementRange: NSRange(location: NSNotFound, length: 0))
-                    self.switchInputLanguage(self.inputLanguage, client: client)
-                    self.inputState = .none
-                } else if self.juliaSession.buffer == previousBuffer {
-                    self.inputState = .juliaSelecting
-                } else {
-                    self.inputState = .juliaComposing
-                }
+            let command: JuliaUnicodeSession.Command = if offset == 0 {
+                .tab
+            } else if offset > 0 {
+                .nextCandidate
             } else {
-                self.moveJuliaSessionSelection(by: offset)
+                .previousCandidate
+            }
+            let result = self.juliaSession.perform(command)
+            if let commitText = result.commitText {
+                client.insertText(commitText, replacementRange: NSRange(location: NSNotFound, length: 0))
+                self.switchInputLanguage(self.inputLanguage, client: client)
+                self.inputState = .none
+            } else {
+                self.inputState = switch result.mode {
+                case .selecting:
+                    .juliaSelecting
+                case .composing, .none:
+                    .juliaComposing
+                }
             }
         case .submitJuliaUnicodeSelection:
-            self.commitJuliaSelection(on: client, inputState: self.inputState)
+            let result = self.juliaSession.perform(.enter)
+            if let commitText = result.commitText {
+                client.insertText(commitText, replacementRange: NSRange(location: NSNotFound, length: 0))
+                self.switchInputLanguage(self.inputLanguage, client: client)
+                self.inputState = .none
+            }
         case .cancelJuliaUnicodeMode:
-            self.resetJuliaSession()
+            _ = self.juliaSession.perform(.cancel)
         case .commitMarkedTextAndEnterJuliaUnicodeMode(let initialBuffer):
             let text = self.segmentsManager.commitMarkedText(inputState: self.inputState)
             client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))

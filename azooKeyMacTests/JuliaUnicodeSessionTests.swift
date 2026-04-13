@@ -24,6 +24,34 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertEqual(result.commitText, "\\notasymbol")
     }
 
+    func testEnterPrefersSelectedCandidateAfterBufferEdit() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.buffer = "\\alph"
+        session.matches = [
+            JuliaUnicodeEntry(trigger: "\\alpha", text: "α"),
+            JuliaUnicodeEntry(trigger: "\\alpha-custom", text: "alt")
+        ]
+        session.selectedIndex = 1
+
+        let result = session.perform(.enter)
+
+        XCTAssertEqual(result.commitText, "alt")
+        XCTAssertEqual(result.mode, .none)
+    }
+
+    func testNextCandidateDoesNothingWhenNoMatchesExist() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.replaceBuffer("\\notasymbol")
+
+        let result = session.perform(.nextCandidate)
+
+        XCTAssertEqual(result.mode, .composing)
+        XCTAssertEqual(result.updatedBuffer, "\\notasymbol")
+        XCTAssertNil(result.commitText)
+        XCTAssertTrue(session.matches.isEmpty)
+        XCTAssertEqual(session.selectedIndex, 0)
+    }
+
     func testAppendAndDeleteBackwardUpdateBuffer() {
         var session = JuliaUnicodeSession(resolver: .standard)
         session.replaceBuffer("\\al")
