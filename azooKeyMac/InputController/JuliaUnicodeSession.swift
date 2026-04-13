@@ -54,7 +54,11 @@ struct JuliaUnicodeSession {
         self.matches = []
     }
 
-    func commitText(for input: String) -> String? {
-        self.resolver.resolveExact(input)?.text
+    func commitText(for input: String, preferSelectedEntry: Bool = false) -> String? {
+        if preferSelectedEntry, let selectedEntry {
+            return selectedEntry.text
+        }
+
+        return self.resolver.resolveExact(input)?.text ?? self.selectedEntry?.text ?? input
     }
 }

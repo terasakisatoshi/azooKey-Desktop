@@ -27,7 +27,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
 
     private var replaceSuggestionWindow: NSWindow
     private var replaceSuggestionsViewController: ReplaceSuggestionsViewController
-    private var juliaSession = JuliaUnicodeSession()
+    var juliaSession = JuliaUnicodeSession()
 
     var promptInputWindow: PromptInputWindow
     var isPromptWindowVisible: Bool = false
@@ -202,7 +202,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         }
         if case .juliaComposing = self.inputState {
             if let client = sender as? IMKTextInput {
-                self.commitJuliaSelection(on: client)
+                self.commitJuliaSelection(on: client, inputState: self.inputState)
             } else {
                 self.resetJuliaSession()
             }
@@ -211,7 +211,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         }
         if case .juliaSelecting = self.inputState {
             if let client = sender as? IMKTextInput {
-                self.commitJuliaSelection(on: client)
+                self.commitJuliaSelection(on: client, inputState: self.inputState)
             } else {
                 self.resetJuliaSession()
             }
@@ -555,7 +555,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         case .moveJuliaUnicodeCandidate(let offset):
             self.moveJuliaSessionSelection(by: offset)
         case .submitJuliaUnicodeSelection:
-            self.commitJuliaSelection(on: client)
+            self.commitJuliaSelection(on: client, inputState: self.inputState)
         case .cancelJuliaUnicodeMode:
             self.resetJuliaSession()
         case .commitMarkedTextAndEnterJuliaUnicodeMode(let initialBuffer):
@@ -905,7 +905,7 @@ extension azooKeyMacInputController: CandidatesViewControllerDelegate {
     func candidateSubmitted() {
         Task { @MainActor in
             if case .juliaSelecting = self.inputState, let client = self.client() {
-                self.commitJuliaSelection(on: client)
+                self.commitJuliaSelection(on: client, inputState: self.inputState)
                 self.inputState = .none
                 self.refreshMarkedText()
                 self.refreshCandidateWindow()

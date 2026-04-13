@@ -133,10 +133,11 @@ extension azooKeyMacInputController {
         }
     }
 
-    @MainActor func commitJuliaSelection(on client: IMKTextInput) {
-        let text = self.juliaSession.commitText(for: self.juliaSession.buffer)
-            ?? self.juliaSession.selectedEntry?.text
-            ?? self.juliaSession.buffer
+    @MainActor func commitJuliaSelection(on client: IMKTextInput, inputState: InputState) {
+        let text = self.juliaSession.commitText(
+            for: self.juliaSession.buffer,
+            preferSelectedEntry: inputState == .juliaSelecting
+        ) ?? self.juliaSession.buffer
         client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
         self.juliaSession.reset()
     }
