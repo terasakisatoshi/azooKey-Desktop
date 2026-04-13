@@ -11,19 +11,21 @@ private func rawInputString(from action: UserAction) -> String? {
 }
 
 private func withTypeBackSlashEnabled<T>(_ body: () -> T) -> T {
-    let defaults = UserDefaults.standard
-    let key = Config.TypeBackSlash.key
-    let originalData = defaults.data(forKey: key)
-    defer {
-        if let data = originalData {
-            defaults.set(data, forKey: key)
-        } else {
-            defaults.removeObject(forKey: key)
+    withIsolatedUserDefaults {
+        let defaults = UserDefaults.standard
+        let key = Config.TypeBackSlash.key
+        let originalData = defaults.data(forKey: key)
+        defer {
+            if let data = originalData {
+                defaults.set(data, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
         }
-    }
 
-    Config.TypeBackSlash().value = true
-    return body()
+        Config.TypeBackSlash().value = true
+        return body()
+    }
 }
 
 @Test func backslashKeyStartsJuliaModeFromNone() async throws {
