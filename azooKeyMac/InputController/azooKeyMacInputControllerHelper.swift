@@ -117,7 +117,7 @@ extension azooKeyMacInputController {
         }
     }
 
-    @MainActor func makeJuliaCandidatePresentations() -> [CandidatePresentation] {
+    func makeJuliaCandidatePresentations() -> [CandidatePresentation] {
         self.juliaSession.matches.map { entry in
             let candidate = Candidate(
                 text: entry.text,
@@ -134,12 +134,12 @@ extension azooKeyMacInputController {
     }
 
     @MainActor func commitJuliaSelection(on client: IMKTextInput, inputState: InputState) {
-        let text = self.juliaSession.commitText(
-            for: self.juliaSession.buffer,
+        let buffer = self.juliaSession.buffer
+        let text = self.juliaSession.commitTextAndReset(
+            for: buffer,
             preferSelectedEntry: inputState == .juliaSelecting
-        ) ?? self.juliaSession.buffer
+        ) ?? buffer
         client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
-        self.juliaSession.reset()
     }
 
     @MainActor func finalizeJuliaSession(on client: IMKTextInput?) {

@@ -204,10 +204,16 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         }
         if case .juliaComposing = self.inputState {
             self.finalizeJuliaSession(on: sender as? IMKTextInput)
+            self.refreshMarkedText()
+            self.refreshCandidateWindow()
+            self.refreshPredictionWindow()
             return
         }
         if case .juliaSelecting = self.inputState {
             self.finalizeJuliaSession(on: sender as? IMKTextInput)
+            self.refreshMarkedText()
+            self.refreshCandidateWindow()
+            self.refreshPredictionWindow()
             return
         }
         if self.segmentsManager.isEmpty {
@@ -900,6 +906,7 @@ extension azooKeyMacInputController: CandidatesViewControllerDelegate {
                 self.finalizeJuliaSession(on: self.client())
                 self.refreshMarkedText()
                 self.refreshCandidateWindow()
+                self.refreshPredictionWindow()
                 return
             }
             self.submitSelectedCandidate()

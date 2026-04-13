@@ -41,6 +41,17 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertTrue(session.matches.isEmpty)
     }
 
+    func testCommitTextAndResetClearsJuliaSessionState() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        session.replaceBuffer("\\alpha")
+
+        let buffer = session.buffer
+        XCTAssertEqual(session.commitTextAndReset(for: buffer), "α")
+        XCTAssertEqual(session.buffer, "")
+        XCTAssertEqual(session.selectedIndex, 0)
+        XCTAssertTrue(session.matches.isEmpty)
+    }
+
     func testSelectedJuliaCandidateWinsOverExactMatchWhenSelecting() {
         var session = JuliaUnicodeSession(resolver: .standard)
         session.replaceBuffer("\\alpha")

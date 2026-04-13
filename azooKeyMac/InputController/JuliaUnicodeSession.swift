@@ -61,4 +61,11 @@ struct JuliaUnicodeSession {
 
         return self.resolver.resolveExact(input)?.text ?? self.selectedEntry?.text ?? input
     }
+
+    mutating func commitTextAndReset(for input: String, preferSelectedEntry: Bool = false) -> String? {
+        defer {
+            self.reset()
+        }
+        return self.commitText(for: input, preferSelectedEntry: preferSelectedEntry)
+    }
 }
