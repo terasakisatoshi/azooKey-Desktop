@@ -77,6 +77,8 @@ public enum ClientAction: Equatable {
     case moveJuliaUnicodeCandidate(Int)
     case submitJuliaUnicodeSelection
     case cancelJuliaUnicodeMode
+    case commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: String)
+    case submitSelectedCandidateAndEnterJuliaUnicodeMode(initialBuffer: String)
 
     case stopComposition
 }

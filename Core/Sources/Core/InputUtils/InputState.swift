@@ -154,6 +154,10 @@ public enum InputState: Sendable, Hashable {
         case .composing:
             switch userAction {
             case .input(let string):
+                let inputString = string.inputString(preferIntention: false)
+                if inputString == "\\" {
+                    return (.commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: inputString), .transition(.juliaComposing))
+                }
                 return (.appendPieceToMarkedText(string), .fallthrough)
             case .number(let number):
                 return (.appendPieceToMarkedText([number.inputPiece]), .fallthrough)
@@ -229,6 +233,10 @@ public enum InputState: Sendable, Hashable {
         case .previewing:
             switch userAction {
             case .input(let string):
+                let inputString = string.inputString(preferIntention: false)
+                if inputString == "\\" {
+                    return (.commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: inputString), .transition(.juliaComposing))
+                }
                 return (.commitMarkedTextAndAppendPieceToMarkedText(string), .transition(.composing))
             case .number(let number):
                 return (.commitMarkedTextAndAppendPieceToMarkedText([number.inputPiece]), .transition(.composing))
@@ -284,8 +292,10 @@ public enum InputState: Sendable, Hashable {
         case .selecting:
             switch userAction {
             case .input(let string):
-                let s = string.inputString(preferIntention: true)
-                if s == "d" && enableDebugWindow {
+                let s = string.inputString(preferIntention: false)
+                if s == "\\" {
+                    return (.submitSelectedCandidateAndEnterJuliaUnicodeMode(initialBuffer: s), .transition(.juliaComposing))
+                } else if s == "d" && enableDebugWindow {
                     return (.enableDebugWindow, .fallthrough)
                 } else if s == "D" && enableDebugWindow {
                     return (.disableDebugWindow, .fallthrough)
@@ -370,6 +380,10 @@ public enum InputState: Sendable, Hashable {
             switch userAction {
             // 入力があったらcomposingに戻る
             case .input(let string):
+                let inputString = string.inputString(preferIntention: false)
+                if inputString == "\\" {
+                    return (.commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: inputString), .transition(.juliaComposing))
+                }
                 return (.appendPieceToMarkedText(string), .transition(.composing))
             case .space:
                 return (.selectNextReplaceSuggestionCandidate, .fallthrough)

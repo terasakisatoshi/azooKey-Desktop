@@ -77,3 +77,107 @@ private func rawInputString(from action: UserAction) -> String? {
     #expect(action == .deleteBackwardFromJuliaUnicodeBuffer)
     #expect(callback == .transition(.juliaComposing))
 }
+
+@Test func backslashStartsJuliaModeFromComposing() async throws {
+    let (action, callback) = InputState.composing.event(
+        eventCore: .init(
+            modifierFlags: [],
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            keyCode: 42
+        ),
+        userAction: UserAction.getUserAction(
+            eventCore: .init(
+                modifierFlags: [],
+                characters: "\\",
+                charactersIgnoringModifiers: "\\",
+                keyCode: 42
+            ),
+            inputLanguage: .japanese
+        ),
+        inputLanguage: .japanese,
+        liveConversionEnabled: false,
+        enableDebugWindow: false,
+        enableSuggestion: false
+    )
+    #expect(action == .commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: "\\"))
+    #expect(callback == .transition(.juliaComposing))
+}
+
+@Test func backslashStartsJuliaModeFromPreviewing() async throws {
+    let (action, callback) = InputState.previewing.event(
+        eventCore: .init(
+            modifierFlags: [],
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            keyCode: 42
+        ),
+        userAction: UserAction.getUserAction(
+            eventCore: .init(
+                modifierFlags: [],
+                characters: "\\",
+                charactersIgnoringModifiers: "\\",
+                keyCode: 42
+            ),
+            inputLanguage: .japanese
+        ),
+        inputLanguage: .japanese,
+        liveConversionEnabled: false,
+        enableDebugWindow: false,
+        enableSuggestion: false
+    )
+    #expect(action == .commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: "\\"))
+    #expect(callback == .transition(.juliaComposing))
+}
+
+@Test func backslashStartsJuliaModeFromSelecting() async throws {
+    let (action, callback) = InputState.selecting.event(
+        eventCore: .init(
+            modifierFlags: [],
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            keyCode: 42
+        ),
+        userAction: UserAction.getUserAction(
+            eventCore: .init(
+                modifierFlags: [],
+                characters: "\\",
+                charactersIgnoringModifiers: "\\",
+                keyCode: 42
+            ),
+            inputLanguage: .japanese
+        ),
+        inputLanguage: .japanese,
+        liveConversionEnabled: false,
+        enableDebugWindow: false,
+        enableSuggestion: false
+    )
+    #expect(action == .submitSelectedCandidateAndEnterJuliaUnicodeMode(initialBuffer: "\\"))
+    #expect(callback == .transition(.juliaComposing))
+}
+
+@Test func backslashStartsJuliaModeFromReplaceSuggestion() async throws {
+    let (action, callback) = InputState.replaceSuggestion.event(
+        eventCore: .init(
+            modifierFlags: [],
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            keyCode: 42
+        ),
+        userAction: UserAction.getUserAction(
+            eventCore: .init(
+                modifierFlags: [],
+                characters: "\\",
+                charactersIgnoringModifiers: "\\",
+                keyCode: 42
+            ),
+            inputLanguage: .japanese
+        ),
+        inputLanguage: .japanese,
+        liveConversionEnabled: false,
+        enableDebugWindow: false,
+        enableSuggestion: false
+    )
+    #expect(action == .commitMarkedTextAndEnterJuliaUnicodeMode(initialBuffer: "\\"))
+    #expect(callback == .transition(.juliaComposing))
+}
