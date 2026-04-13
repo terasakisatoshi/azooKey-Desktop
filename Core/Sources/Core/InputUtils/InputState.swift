@@ -52,7 +52,7 @@ public enum InputState: Sendable, Hashable {
         case .none:
             switch userAction {
             case .input(let string):
-                let inputString = string.inputString(preferIntention: true)
+                let inputString = string.inputString(preferIntention: false)
                 if inputString == "\\" {
                     return (.enterJuliaUnicodeMode(initialBuffer: inputString), .transition(.juliaComposing))
                 }
@@ -100,7 +100,7 @@ public enum InputState: Sendable, Hashable {
         case .juliaComposing, .juliaSelecting:
             switch userAction {
             case .input(let pieces):
-                return (.appendToJuliaUnicodeBuffer(pieces.inputString(preferIntention: true)), .transition(.juliaComposing))
+                return (.appendToJuliaUnicodeBuffer(pieces.inputString(preferIntention: false)), .transition(.juliaComposing))
             case .number(let number):
                 return (.appendToJuliaUnicodeBuffer(number.inputString), .transition(.juliaComposing))
             case .backspace:

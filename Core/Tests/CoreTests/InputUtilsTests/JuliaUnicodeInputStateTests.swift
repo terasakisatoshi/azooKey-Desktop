@@ -1,8 +1,40 @@
 @testable import Core
+import Foundation
 import KanaKanjiConverterModule
 import Testing
 
-@Test func backslashStartsJuliaModeFromNone() async throws {
+private func rawInputString(from action: UserAction) -> String? {
+    guard case .input(let pieces) = action else {
+        return nil
+    }
+    return pieces.inputString(preferIntention: false)
+}
+
+@Test func backslashKeyStartsJuliaModeFromNone() async throws {
+    let defaults = UserDefaults.standard
+    let key = Config.TypeBackSlash.key
+    let originalData = defaults.data(forKey: key)
+    defer {
+        if let data = originalData {
+            defaults.set(data, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    Config.TypeBackSlash().value = true
+
+    let userAction = UserAction.getUserAction(
+        eventCore: .init(
+            modifierFlags: [],
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            keyCode: 42
+        ),
+        inputLanguage: .japanese
+    )
+    #expect(rawInputString(from: userAction) == "\\")
+
     let (action, callback) = InputState.none.event(
         eventCore: .init(
             modifierFlags: [],
@@ -10,7 +42,7 @@ import Testing
             charactersIgnoringModifiers: "\\",
             keyCode: 42
         ),
-        userAction: .input([.character("\\")]),
+        userAction: userAction,
         inputLanguage: .japanese,
         liveConversionEnabled: false,
         enableDebugWindow: false,
