@@ -27,6 +27,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
 
     private var replaceSuggestionWindow: NSWindow
     private var replaceSuggestionsViewController: ReplaceSuggestionsViewController
+    private var juliaSession = JuliaUnicodeSession()
 
     var promptInputWindow: PromptInputWindow
     var isPromptWindowVisible: Bool = false
@@ -196,6 +197,24 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         // Unicode入力モードの場合は状態だけリセットして終了
         // マウスクリック等でOSがMarkedTextを確定した場合、IME側からは消せないため
         if case .unicodeInput = self.inputState {
+            self.inputState = .none
+            return
+        }
+        if case .juliaComposing = self.inputState {
+            if let client = sender as? IMKTextInput {
+                self.commitJuliaSelection(on: client)
+            } else {
+                self.resetJuliaSession()
+            }
+            self.inputState = .none
+            return
+        }
+        if case .juliaSelecting = self.inputState {
+            if let client = sender as? IMKTextInput {
+                self.commitJuliaSelection(on: client)
+            } else {
+                self.resetJuliaSession()
+            }
             self.inputState = .none
             return
         }
@@ -527,18 +546,23 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                 client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
                 self.segmentsManager.stopComposition()
             }
-        case .enterJuliaUnicodeMode,
-             .appendToJuliaUnicodeBuffer,
-             .deleteBackwardFromJuliaUnicodeBuffer,
-             .moveJuliaUnicodeCandidate,
-             .submitJuliaUnicodeSelection,
-             .cancelJuliaUnicodeMode:
-            // Julia controller behavior is not implemented yet.
-            break
-        case .commitMarkedTextAndEnterJuliaUnicodeMode:
+        case .enterJuliaUnicodeMode(let initialBuffer):
+            self.startJuliaSession(initialBuffer: initialBuffer)
+        case .appendToJuliaUnicodeBuffer(let string):
+            self.appendToJuliaSession(string)
+        case .deleteBackwardFromJuliaUnicodeBuffer:
+            self.deleteBackwardFromJuliaSession()
+        case .moveJuliaUnicodeCandidate(let offset):
+            self.moveJuliaSessionSelection(by: offset)
+        case .submitJuliaUnicodeSelection:
+            self.commitJuliaSelection(on: client)
+        case .cancelJuliaUnicodeMode:
+            self.resetJuliaSession()
+        case .commitMarkedTextAndEnterJuliaUnicodeMode(let initialBuffer):
             let text = self.segmentsManager.commitMarkedText(inputState: self.inputState)
             client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
-        case .submitSelectedCandidateAndEnterJuliaUnicodeMode:
+            self.startJuliaSession(initialBuffer: initialBuffer)
+        case .submitSelectedCandidateAndEnterJuliaUnicodeMode(let initialBuffer):
             // 選択中の候補を確定
             self.submitSelectedCandidate()
             // 残りのテキストがあればひらがなのまま確定
@@ -547,6 +571,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                 client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
                 self.segmentsManager.stopComposition()
             }
+            self.startJuliaSession(initialBuffer: initialBuffer)
         // MARK: 特殊ケース
         case .consume:
             // 何もせず先に進む
@@ -590,6 +615,14 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
     }
 
     func refreshCandidateWindow() {
+        if case .juliaComposing = self.inputState {
+            self.refreshJuliaCandidateWindow()
+            return
+        }
+        if case .juliaSelecting = self.inputState {
+            self.refreshJuliaCandidateWindow()
+            return
+        }
         switch self.segmentsManager.getCurrentCandidateWindow(inputState: self.inputState) {
         case .selecting(let candidates, let selectionIndex):
             var rect: NSRect = .zero
@@ -618,6 +651,26 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
             self.candidatesWindow.orderOut(nil)
             self.candidatesViewController.hide()
         }
+    }
+
+    private func refreshJuliaCandidateWindow() {
+        let candidatePresentations = self.makeJuliaCandidatePresentations()
+        guard !candidatePresentations.isEmpty else {
+            self.candidatesWindow.setIsVisible(false)
+            self.candidatesWindow.orderOut(nil)
+            self.candidatesViewController.hide()
+            return
+        }
+
+        var rect: NSRect = .zero
+        self.client().attributes(forCharacterIndex: 0, lineHeightRectangle: &rect)
+        self.candidatesViewController.showCandidateIndex = self.inputState == .juliaSelecting
+        self.candidatesViewController.updateCandidatePresentations(
+            candidatePresentations,
+            selectionIndex: self.inputState == .juliaSelecting ? self.juliaSession.selectedIndex : nil,
+            cursorLocation: rect.origin
+        )
+        self.candidatesWindow.orderFront(nil)
     }
 
     func refreshPredictionWindow() {
@@ -775,6 +828,14 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
     }
 
     func refreshMarkedText() {
+        if case .juliaComposing = self.inputState {
+            self.refreshJuliaMarkedText()
+            return
+        }
+        if case .juliaSelecting = self.inputState {
+            self.refreshJuliaMarkedText()
+            return
+        }
         let highlight = self.mark(
             forStyle: kTSMHiliteSelectedConvertedText,
             at: NSRange(location: NSNotFound, length: 0)
@@ -805,6 +866,21 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
         )
     }
 
+    private func refreshJuliaMarkedText() {
+        let text = NSMutableAttributedString(
+            string: self.juliaSession.buffer,
+            attributes: self.mark(
+                forStyle: kTSMHiliteConvertedText,
+                at: NSRange(location: NSNotFound, length: 0)
+            ) as? [NSAttributedString.Key: Any]
+        )
+        self.client()?.setMarkedText(
+            text,
+            selectionRange: NSRange(location: self.juliaSession.buffer.utf16.count, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+    }
+
     @MainActor
     func submitCandidate(_ candidate: Candidate) {
         if let client = self.client() {
@@ -828,12 +904,27 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
 extension azooKeyMacInputController: CandidatesViewControllerDelegate {
     func candidateSubmitted() {
         Task { @MainActor in
+            if case .juliaSelecting = self.inputState, let client = self.client() {
+                self.commitJuliaSelection(on: client)
+                self.inputState = .none
+                self.refreshMarkedText()
+                self.refreshCandidateWindow()
+                return
+            }
             self.submitSelectedCandidate()
         }
     }
 
     func candidateSelectionChanged(_ row: Int) {
         Task { @MainActor in
+            if case .juliaComposing = self.inputState {
+                self.juliaSession.selectedIndex = min(max(row, 0), max(self.juliaSession.matches.count - 1, 0))
+                return
+            }
+            if case .juliaSelecting = self.inputState {
+                self.juliaSession.selectedIndex = min(max(row, 0), max(self.juliaSession.matches.count - 1, 0))
+                return
+            }
             self.segmentsManager.requestSelectingRow(row)
         }
     }

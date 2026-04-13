@@ -1,6 +1,7 @@
 import Cocoa
 import Core
 import InputMethodKit
+import KanaKanjiConverterModuleWithDefaultDictionary
 
 extension azooKeyMacInputController {
     // MARK: - Settings and Menu Items
@@ -114,5 +115,50 @@ extension azooKeyMacInputController {
         } catch {
             self.segmentsManager.appendDebugMessage("\(#line): \(error.localizedDescription)")
         }
+    }
+
+    @MainActor func makeJuliaCandidatePresentations() -> [CandidatePresentation] {
+        self.juliaSession.matches.map { entry in
+            let candidate = Candidate(
+                text: entry.text,
+                value: 0,
+                composingCount: .surfaceCount(entry.text.count),
+                lastMid: 0,
+                data: []
+            )
+            return CandidatePresentation(
+                candidate: candidate,
+                displayContext: .init(annotationText: entry.trigger)
+            )
+        }
+    }
+
+    @MainActor func commitJuliaSelection(on client: IMKTextInput) {
+        let text = self.juliaSession.commitText(for: self.juliaSession.buffer)
+            ?? self.juliaSession.selectedEntry?.text
+            ?? self.juliaSession.buffer
+        client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        self.juliaSession.reset()
+    }
+
+    @MainActor func resetJuliaSession() {
+        self.juliaSession.reset()
+    }
+
+    @MainActor func startJuliaSession(initialBuffer: String) {
+        self.juliaSession.reset()
+        self.juliaSession.replaceBuffer(initialBuffer)
+    }
+
+    @MainActor func appendToJuliaSession(_ string: String) {
+        self.juliaSession.append(string)
+    }
+
+    @MainActor func deleteBackwardFromJuliaSession() {
+        self.juliaSession.deleteBackward()
+    }
+
+    @MainActor func moveJuliaSessionSelection(by offset: Int) {
+        self.juliaSession.moveSelection(by: offset)
     }
 }

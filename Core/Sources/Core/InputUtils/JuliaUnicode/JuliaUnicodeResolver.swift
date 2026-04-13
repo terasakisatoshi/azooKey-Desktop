@@ -1,7 +1,7 @@
-struct JuliaUnicodeResolver: Sendable {
-    static let standard = JuliaUnicodeResolver()
+public struct JuliaUnicodeResolver: Sendable {
+    public static let standard = JuliaUnicodeResolver()
 
-    func resolveExact(_ input: String) -> JuliaUnicodeEntry? {
+    public func resolveExact(_ input: String) -> JuliaUnicodeEntry? {
         let normalizedInput = JuliaUnicodeNormalizer.normalize(input)
         if let entry = Self.exactTriggerLookup[normalizedInput] {
             return entry
@@ -12,7 +12,7 @@ struct JuliaUnicodeResolver: Sendable {
         return Self.resolveRunExpansion(normalizedInput)
     }
 
-    func resolveMatches(_ input: String) -> [JuliaUnicodeEntry] {
+    public func resolveMatches(_ input: String) -> [JuliaUnicodeEntry] {
         let normalizedInput = JuliaUnicodeNormalizer.normalize(input)
         guard !normalizedInput.isEmpty else {
             return []

@@ -33,6 +33,10 @@ class CandidatesViewController: BaseCandidateViewController {
         }
     }
 
+    @MainActor func submitSelectedCandidate() {
+        delegate?.candidateSubmitted()
+    }
+
     override internal func configureCellView(_ cell: CandidateTableCellView, forRow row: Int) {
         let candidate = self.candidates[row].candidate
         let annotationText = self.candidates[row].displayContext.annotationText
