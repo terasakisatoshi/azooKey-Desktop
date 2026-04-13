@@ -2,6 +2,11 @@
 
 import Foundation
 
+guard CommandLine.arguments.count == 1 else {
+    fputs("usage: swift ./tools/generate_julia_unicode_symbols.swift\n", stderr)
+    exit(1)
+}
+
 let scriptURL = URL(fileURLWithPath: #filePath)
 let repoRootURL = scriptURL.deletingLastPathComponent().deletingLastPathComponent()
 
@@ -212,7 +217,14 @@ func writeSymbolMap(symbolName: String, pairs: [(trigger: String, text: String)]
 }
 
 for file in inputFiles {
+    guard FileManager.default.fileExists(atPath: file.source.path) else {
+        fputs("missing Julia source: \(file.source.path)\n", stderr)
+        fputs("ensure extern/julia is available before regenerating symbol tables\n", stderr)
+        exit(1)
+    }
+
     let source = try String(contentsOf: file.source, encoding: .utf8)
     let pairs = parsePairs(from: source)
     try writeSymbolMap(symbolName: file.symbolName, pairs: pairs, destination: file.destination)
+    print("generated \(file.destination.lastPathComponent) from \(file.source.lastPathComponent) (\(pairs.count) entries)")
 }

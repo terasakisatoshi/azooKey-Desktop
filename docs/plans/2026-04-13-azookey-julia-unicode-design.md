@@ -153,6 +153,21 @@ Julia REPL 寄りの操作に合わせる。
 - `refreshMarkedText` と `refreshCandidateWindow` だけ Julia 補完用の分岐を追加する
 - `CandidatesViewControllerDelegate` は Julia 補完中だけ controller 内の Julia 選択状態を更新する
 
+## Regeneration Workflow
+
+Julia のシンボル定義を更新するときは、`extern/julia` を参照して次のコマンドを実行する。
+
+```bash
+swift ./tools/generate_julia_unicode_symbols.swift
+```
+
+このスクリプトは次の生成ファイルを更新する。
+
+- `Core/Sources/Core/InputUtils/JuliaUnicode/Generated/JuliaLatexSymbolMap.swift`
+- `Core/Sources/Core/InputUtils/JuliaUnicode/Generated/JuliaEmojiSymbolMap.swift`
+
+更新後は少なくとも `swift test --package-path ./Core` を再実行し、辞書生成と resolver の整合性を確認する。
+
 ## Out of Scope
 
 - かな混じりの Julia 補完入力

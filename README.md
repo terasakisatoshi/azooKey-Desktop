@@ -52,6 +52,23 @@ GitHub Sponsorsをご利用ください。
 * ライブ変換
 * AZIKのネイティブサポート
 
+### Julia Unicode Completion
+
+直接入力した `\` から、Julia REPL 風の Unicode 補完を使えます。
+
+- `Tab`: 完全一致を確定、または候補の共通接頭辞まで補完
+- `Space`: 候補を開く、または次候補へ移動
+- `Shift+Space` / `Up`: 前候補へ移動
+- `Down`: 次候補へ移動
+- `Enter`: 選択中候補を確定。一致がなければ入力中の `\foo` をそのまま確定
+- `Escape`: Julia 補完をキャンセル
+
+例:
+
+- `\alpha` -> `α`
+- `\:koala:` -> `🐨`
+- `\^n` -> `ⁿ`
+
 
 ## 開発ガイド
 
@@ -101,6 +118,14 @@ git submodule update --init
 
 ### pkgファイルの作成
 `pkgbuild.sh`によって配布用のdmgファイルを作成できます。`build/azooKeyMac.app` としてDeveloper IDで署名済みの.appを配置してください。
+
+### Julia Unicode symbol tables の更新
+
+`extern/julia` の参照実装を更新したら、次のコマンドで Swift の生成テーブルを再生成してください。
+
+```bash
+swift ./tools/generate_julia_unicode_symbols.swift
+```
 
 ### v1.0リリースに向けて
 [meta: v1.0のリリースに向けたロードマップ（#181）](https://github.com/azooKey/azooKey-Desktop/issues/181)をご覧ください．
