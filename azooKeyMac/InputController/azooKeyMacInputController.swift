@@ -527,6 +527,26 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                 client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
                 self.segmentsManager.stopComposition()
             }
+        case .enterJuliaUnicodeMode,
+             .appendToJuliaUnicodeBuffer,
+             .deleteBackwardFromJuliaUnicodeBuffer,
+             .moveJuliaUnicodeCandidate,
+             .submitJuliaUnicodeSelection,
+             .cancelJuliaUnicodeMode:
+            // Julia controller behavior is not implemented yet.
+            break
+        case .commitMarkedTextAndEnterJuliaUnicodeMode:
+            let text = self.segmentsManager.commitMarkedText(inputState: self.inputState)
+            client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        case .submitSelectedCandidateAndEnterJuliaUnicodeMode:
+            // 選択中の候補を確定
+            self.submitSelectedCandidate()
+            // 残りのテキストがあればひらがなのまま確定
+            if !self.segmentsManager.isEmpty {
+                let text = self.segmentsManager.convertTarget
+                client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+                self.segmentsManager.stopComposition()
+            }
         // MARK: 特殊ケース
         case .consume:
             // 何もせず先に進む
