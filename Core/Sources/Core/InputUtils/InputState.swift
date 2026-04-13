@@ -9,6 +9,8 @@ public enum InputState: Sendable, Hashable {
     case selecting
     case replaceSuggestion
     case unicodeInput(String)
+    case juliaComposing
+    case juliaSelecting
 
     // この種のコードは複雑にしかならないので、lintを無効にする
     // swiftlint:disable:next cyclomatic_complexity
@@ -50,6 +52,10 @@ public enum InputState: Sendable, Hashable {
         case .none:
             switch userAction {
             case .input(let string):
+                let inputString = string.inputString(preferIntention: true)
+                if inputString == "\\" {
+                    return (.enterJuliaUnicodeMode(initialBuffer: inputString), .transition(.juliaComposing))
+                }
                 switch inputLanguage {
                 case .japanese:
                     return (.appendPieceToMarkedText(string), .transition(.composing))
@@ -89,6 +95,32 @@ public enum InputState: Sendable, Hashable {
             case .startUnicodeInput:
                 return (.enterUnicodeInputMode, .transition(.unicodeInput("")))
             case .unknown, .navigation, .backspace, .enter, .escape, .function, .editSegment, .tab, .forget, .transformSelectedText:
+                return (.fallthrough, .fallthrough)
+            }
+        case .juliaComposing, .juliaSelecting:
+            switch userAction {
+            case .input(let pieces):
+                return (.appendToJuliaUnicodeBuffer(pieces.inputString(preferIntention: true)), .transition(.juliaComposing))
+            case .number(let number):
+                return (.appendToJuliaUnicodeBuffer(number.inputString), .transition(.juliaComposing))
+            case .backspace:
+                return (.deleteBackwardFromJuliaUnicodeBuffer, .transition(.juliaComposing))
+            case .space, .tab:
+                return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
+            case .navigation(let direction):
+                switch direction {
+                case .up, .left:
+                    return (.moveJuliaUnicodeCandidate(-1), .transition(.juliaSelecting))
+                case .down, .right:
+                    return (.moveJuliaUnicodeCandidate(1), .transition(.juliaSelecting))
+                }
+            case .enter:
+                return (.submitJuliaUnicodeSelection, .transition(.none))
+            case .escape:
+                return (.cancelJuliaUnicodeMode, .transition(.none))
+            case .unknown, .function, .editSegment, .suggest, .transformSelectedText, .deadKey, .英数, .かな, .forget:
+                return (.consume, .fallthrough)
+            case .startUnicodeInput:
                 return (.fallthrough, .fallthrough)
             }
         case .attachDiacritic(let diacritic):

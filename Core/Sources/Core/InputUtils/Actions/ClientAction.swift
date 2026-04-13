@@ -1,6 +1,6 @@
 import KanaKanjiConverterModule
 
-public enum ClientAction {
+public enum ClientAction: Equatable {
     case `consume`
     case `fallthrough`
     case showCandidateWindow
@@ -70,10 +70,18 @@ public enum ClientAction {
     case cancelUnicodeInput
     case submitSelectedCandidateAndEnterUnicodeInputMode
 
+    // Julia Unicode Input
+    case enterJuliaUnicodeMode(initialBuffer: String)
+    case appendToJuliaUnicodeBuffer(String)
+    case deleteBackwardFromJuliaUnicodeBuffer
+    case moveJuliaUnicodeCandidate(Int)
+    case submitJuliaUnicodeSelection
+    case cancelJuliaUnicodeMode
+
     case stopComposition
 }
 
-public enum ClientActionCallback {
+public enum ClientActionCallback: Equatable {
     case `fallthrough`
     case transition(InputState)
     ///
