@@ -18,6 +18,11 @@ import Testing
     #expect(resolver.resolveExact("\\bbpi")?.text == "ℼ")
 }
 
+@Test func juliaResolverShortUnicodeEscapeAliasesResolve() async throws {
+    let resolver = JuliaUnicodeResolver.standard
+    #expect(resolver.resolveExact("\\scrl")?.text == "𝓁")
+}
+
 @Test func juliaResolverPrefixEmoji() async throws {
     let resolver = JuliaUnicodeResolver.standard
     #expect(resolver.resolveMatches("\\:ko").contains { $0.trigger == "\\:koala:" })

@@ -76,8 +76,11 @@ func decodeJuliaString(_ raw: Substring) -> String {
             index = end
         case "U":
             let start = index + 2
-            let end = min(start + 8, characters.count)
-            guard end - start == 8 else {
+            var end = start
+            while end < characters.count, end - start < 8, characters[end].isHexDigit {
+                end += 1
+            }
+            guard end > start else {
                 result.append(next)
                 index += 2
                 continue
