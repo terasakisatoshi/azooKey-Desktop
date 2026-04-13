@@ -99,22 +99,38 @@ func decodeJuliaString(_ raw: Substring) -> String {
 
 func parsePairs(from source: String) -> [(trigger: String, text: String)] {
     var pairs: [(trigger: String, text: String)] = []
+    var inForwardTable = false
 
-    source.enumerateLines { line, _ in
+    for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
+        let line = String(rawLine)
+
+        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+        if trimmedLine == "const latex_symbols = Dict(" || trimmedLine == "const emoji_symbols = Dict(" {
+            inForwardTable = true
+            continue
+        }
+
+        guard inForwardTable else {
+            continue
+        }
+
         let range = NSRange(line.startIndex..<line.endIndex, in: line)
         guard let match = pairRegex.firstMatch(in: line, options: [], range: range) else {
-            return
+            continue
         }
 
         guard
             let triggerRange = Range(match.range(at: 1), in: line),
             let textRange = Range(match.range(at: 2), in: line)
         else {
-            return
+            continue
         }
 
         let trigger = decodeJuliaString(line[triggerRange])
         let text = decodeJuliaString(line[textRange])
+        guard trigger.hasPrefix("\\") && !text.hasPrefix("\\") else {
+            continue
+        }
         pairs.append((trigger: trigger, text: text))
     }
 
