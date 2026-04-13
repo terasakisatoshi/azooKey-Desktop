@@ -48,6 +48,19 @@ final class JuliaUnicodeSessionTests: XCTestCase {
         XCTAssertEqual(result.mode, .none)
     }
 
+    func testEnterPrefersExplicitCandidateWindowSelectionWhileComposing() {
+        var session = JuliaUnicodeSession(resolver: .standard)
+        let matches = JuliaUnicodeResolver.standard.resolveMatches("\\al")
+        XCTAssertGreaterThan(matches.count, 1)
+        session.replaceBuffer("\\al")
+        session.selectCandidate(at: 1, explicit: true)
+
+        let result = session.perform(.enter)
+
+        XCTAssertEqual(result.commitText, matches[1].text)
+        XCTAssertEqual(result.mode, .none)
+    }
+
     func testNextCandidateDoesNothingWhenNoMatchesExist() {
         var session = JuliaUnicodeSession(resolver: .standard)
         session.replaceBuffer("\\notasymbol")

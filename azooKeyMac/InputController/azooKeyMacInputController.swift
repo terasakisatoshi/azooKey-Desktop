@@ -945,7 +945,7 @@ extension azooKeyMacInputController: CandidatesViewControllerDelegate {
     func candidateSelectionChanged(_ row: Int) {
         Task { @MainActor in
             if case .juliaComposing = self.inputState {
-                self.juliaSession.selectCandidate(at: row, explicit: false)
+                self.juliaSession.selectCandidate(at: row, explicit: true)
                 return
             }
             if case .juliaSelecting = self.inputState {
