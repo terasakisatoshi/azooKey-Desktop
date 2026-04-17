@@ -1240,5 +1240,5 @@ internal let juliaEmojiSymbolMap: [(trigger: String, text: String)] = [
     (trigger: "\\:zebra_face:", text: "🦓"),
     (trigger: "\\:zipper_mouth_face:", text: "🤐"),
     (trigger: "\\:zombie:", text: "🧟"),
-    (trigger: "\\:zzz:", text: "💤"),
+    (trigger: "\\:zzz:", text: "💤")
 ]

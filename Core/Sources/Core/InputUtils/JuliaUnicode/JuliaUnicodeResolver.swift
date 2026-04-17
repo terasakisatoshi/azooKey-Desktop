@@ -35,10 +35,8 @@ private extension JuliaUnicodeResolver {
         var lookup: [String: JuliaUnicodeEntry] = [:]
         lookup.reserveCapacity(allEntries.count)
 
-        for entry in allEntries {
-            if lookup[entry.trigger] == nil {
-                lookup[entry.trigger] = entry
-            }
+        for entry in allEntries where lookup[entry.trigger] == nil {
+            lookup[entry.trigger] = entry
         }
 
         return lookup
@@ -50,9 +48,10 @@ private extension JuliaUnicodeResolver {
 
         for entry in allEntries {
             let normalizedTrigger = JuliaUnicodeNormalizer.normalize(entry.trigger)
-            if lookup[normalizedTrigger] == nil {
-                lookup[normalizedTrigger] = entry
+            if lookup[normalizedTrigger] != nil {
+                continue
             }
+            lookup[normalizedTrigger] = entry
         }
 
         return lookup

@@ -2552,5 +2552,5 @@ internal let juliaLatexSymbolMap: [(trigger: String, text: String)] = [
     (trigger: "\\7/8", text: "⅞"),
     (trigger: "\\1/", text: "⅟"),
     (trigger: "\\0/3", text: "↉"),
-    (trigger: "\\1/4", text: "¼"),
+    (trigger: "\\1/4", text: "¼")
 ]
