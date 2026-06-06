@@ -27,7 +27,7 @@ if [[ -z "\$derived_data_path" ]]; then
     echo "missing -derivedDataPath in xcodebuild invocation" >&2
     exit 1
 fi
-app_dir="\$derived_data_path/Build/Products/Debug/azooKeyMac.app/Contents"
+app_dir="\$derived_data_path/Build/Products/Release/azooKeyMac.app/Contents"
 mkdir -p "\$app_dir/Resources/en.lproj"
 cat >"\$app_dir/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -75,8 +75,8 @@ if [[ $status -ne 0 ]]; then
     exit 1
 fi
 
-if ! grep -q -- "-configuration Debug" "$LOG_DIR/xcodebuild_args.txt"; then
-    echo "expected install.sh default to build Debug for local install"
+if ! grep -q -- "-configuration Release" "$LOG_DIR/xcodebuild_args.txt"; then
+    echo "expected install.sh default to build Release for local install"
     exit 1
 fi
 

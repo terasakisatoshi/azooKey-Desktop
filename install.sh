@@ -43,11 +43,11 @@ run_local_install() {
     build_dir="$(mktemp -d "${TMPDIR:-/tmp}/azookey-local-install.XXXXXX")"
     trap 'rm -rf "$build_dir"' RETURN
 
-    local app_src="$build_dir/Build/Products/Debug/$LOCAL_APP_NAME"
+    local app_src="$build_dir/Build/Products/Release/$LOCAL_APP_NAME"
     local xcodebuild_args=(
         -project azooKeyMac.xcodeproj
         -scheme azooKeyMac
-        -configuration Debug
+        -configuration Release
         -derivedDataPath "$build_dir"
         CODE_SIGNING_ALLOWED=NO
         CODE_SIGNING_REQUIRED=NO
