@@ -38,11 +38,29 @@ cloneする際には`--recursive`をつけてサブモジュールまでロー�
 git clone https://github.com/azooKey/azooKey-Desktop --recursive
 ```
 
-submodule が更新されている場合は `git submodule update --init` を行ってください。その後、以下のスクリプトで `Release` 構成の開発版をビルド・インストールできます。配布版と同様に最適化が有効になります。
+#### Zenzaiの重みファイルの取得
+
+かな漢字変換に使う Zenzai の重みファイルは、Hugging Face のサブモジュール内で Git LFS 管理されています。clone 後、以下を実行して重みファイル本体を取得してください。
+
+```bash
+git submodule update --init --recursive
+git -C azooKeyMac/Resources/zenz-v3.1-small-gguf lfs pull --include=ggml-model-Q5_K_M.gguf
+```
+
+正しく取得できている場合、`ggml-model-Q5_K_M.gguf` は約70MBのファイルになります。
+
+```bash
+ls -lh azooKeyMac/Resources/zenz-v3.1-small-gguf/ggml-model-Q5_K_M.gguf
+```
+
+このファイルが100B程度で、先頭が `version https://git-lfs.github.com/spec/v1` となっている場合は、LFSのポインタだけが残っており、重みファイル本体が取得できていません。その場合は Git LFS を導入したうえで、上記の `git -C ... lfs pull` を再実行してください。
+
+submodule が更新されている場合は `git submodule update --init --recursive` を行ってください。その後、以下のスクリプトで `Release` 構成の開発版をビルド・インストールできます。配布版と同様に最適化が有効になります。
 
 ```bash
 # submoduleを更新
-git submodule update --init
+git submodule update --init --recursive
+git -C azooKeyMac/Resources/zenz-v3.1-small-gguf lfs pull --include=ggml-model-Q5_K_M.gguf
 
 # Release 構成でビルドして ~/Library/Input Methods にインストール
 ./install.sh --ignore-lint
